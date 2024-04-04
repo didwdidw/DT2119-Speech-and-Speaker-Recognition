@@ -154,6 +154,9 @@ def logMelSpectrum(input, samplingrate):
 
     # The filterbank is designed to mimic the human ear's response more closely than the linearly spaced frequency bands used in the original FFT.
     # The Mel scale relates perceived frequency of a pure tone to its actual measured frequency.
+    # The Mel scale defines a sound signal at 1000 Hz that is 40 decibels above the human hearing threshold as the reference point of 1000 mel.
+    # When the frequency is above 500Hz, as the frequency increases, every time the human ear feels the same amount of pitch change, the required frequency change becomes larger and larger.
+    # This results in the four octaves above 500 Hz on the Hertz scale (one octave being twice the frequency) corresponding to only two octaves on the Mel scale.
     # Filters are spaced linearly at low frequencies and logarithmically at high frequencies, which more accurately represents the human ear's resolution.
 
     # The filters in a Mel filterbank are triangular and are linearly spaced on the Mel scale, which translates to a logarithmic spacing on the linear frequency scale.
@@ -176,6 +179,10 @@ def cepstrum(input, nceps):
         array of Cepstral coefficients [N x nceps]
     Note: you can use the function dct from scipy.fftpack.realtransforms
     """
+
+    # The DCT helps to de-correlate the filterbank coefficients and produce a compressed representation of the filterbank energies.
+    # The coefficients that result from the DCT are the Mel Frequency Cepstral Coefficients.
+    # Typically, only the first 12-13 of these coefficients are used as features in voice recognition tasks, as they contain the most significant information.
     ceps = fftpack.dct(input)[:, 0:nceps]
     return ceps
 
@@ -198,7 +205,6 @@ def dtw(x, y, dist):
     """
 
     # Dynamic Time Warping (DTW) is used for measuring similarity between two temporal sequences which may vary in speed.
-
     N = len(x)
     M = len(y)
     LD = dist
