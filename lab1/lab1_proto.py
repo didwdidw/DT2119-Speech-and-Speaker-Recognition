@@ -46,7 +46,7 @@ def mfcc(samples, winlen=400, winshift=200, preempcoeff=0.97, nfft=512, nceps=13
     """
     mspecs = mspec(samples, winlen, winshift, preempcoeff, nfft, samplingrate)
     ceps = cepstrum(mspecs, nceps)
-    return lifter(ceps, liftercoeff)
+    return lifter(ceps, liftercoeff)  # correct the range of the coefficients
 
 # Functions to be implemented ----------------------------------
 
