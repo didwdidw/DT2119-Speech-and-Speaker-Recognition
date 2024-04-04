@@ -62,6 +62,9 @@ def enframe(samples, winlen, winshift):
         numpy array [N x winlen], where N is the number of windows that fit
         in the input signal
     """
+
+    # Audio signals are non-stationary over long periods, but if we examine them over sufficiently short periods, they can be considered stationary.
+    # This framing process allows us to analyze the signal in these small, manageable chunks.
     enframed = []
     for i in range(0, len(samples), winshift):
         if i + winlen <= len(samples):
@@ -125,6 +128,8 @@ def powerSpectrum(input, nfft):
         array of power spectra [N x nfft]
     Note: you can use the function fft from scipy.fftpack
     """
+
+    # The power spectrum is calculated from the FFT, which represents the power of each frequency component present in the frame.
 
     # The sampling frequency should be greater than twice the highest frequency in the signal
     # Given that example['samplingrate'] = 20000 -> f_max = 10000, frequencies above this threshold are subject to aliasing
