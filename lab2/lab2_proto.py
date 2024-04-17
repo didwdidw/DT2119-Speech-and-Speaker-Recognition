@@ -30,36 +30,33 @@ def concatTwoHMMs(hmm1, hmm2):
 
     See also: the concatenating_hmms.pdf document in the lab package
     """
+    combinedhmm = dict()
+
     # Number of states in hmm1 (excluding the non-emitting state)
     M1 = len(hmm1['startprob']) - 1
     M2 = len(hmm2['startprob']) - 1
 
     # Concatenate start probabilities
-    startprob = np.zeros(M1 + M2 + 1)
+    combinedhmm['startprob'] = np.zeros(M1 + M2 + 1)
     # Exclude the non-emitting state's probability
-    startprob[:M1] = hmm1['startprob'][:-1]
+    combinedhmm['startprob'][:M1] = hmm1['startprob'][:-1]
     # Transition from hmm1's non-emitting state
-    startprob[M1:] = hmm1['startprob'][-1] * hmm2['startprob']
+    combinedhmm['startprob'][M1:] = hmm1['startprob'][-1] * hmm2['startprob']
 
     # Create the transition matrix
-    transmat = np.zeros((M1 + M2 + 1, M1 + M2 + 1))
+    combinedhmm['transmat'] = np.zeros((M1 + M2 + 1, M1 + M2 + 1))
     # Internal transitions in hmm1
-    transmat[:M1, :M1] = hmm1['transmat'][:-1, :-1]
-    transmat[M1:, M1:] = hmm2['transmat']  # Internal transitions in hmm2
-    transmat[:M1, M1:] = np.outer(
+    combinedhmm['transmat'][:M1, :M1] = hmm1['transmat'][:-1, :-1]
+    # Internal transitions in hmm2
+    combinedhmm['transmat'][M1:, M1:] = hmm2['transmat']
+    combinedhmm['transmat'][:M1, M1:] = np.outer(
         hmm1['transmat'][:-1, -1], hmm2['startprob'])  # From hmm1 to hmm2
 
     # Concatenate means and covariances
-    means = np.vstack((hmm1['means'], hmm2['means']))
-    covars = np.vstack((hmm1['covars'], hmm2['covars']))
+    combinedhmm['means'] = np.vstack((hmm1['means'], hmm2['means']))
+    combinedhmm['covars'] = np.vstack((hmm1['covars'], hmm2['covars']))
 
-    return {
-        'name': hmm1['name'] + '+' + hmm2['name'],
-        'startprob': startprob,
-        'transmat': transmat,
-        'means': means,
-        'covars': covars
-    }
+    return combinedhmm
 
 
 # this is already implemented, but based on concat2HMMs() above
@@ -124,6 +121,14 @@ def forward(log_emlik, log_startprob, log_transmat):
     Output:
         forward_prob: NxM array of forward log probabilities for each of the M states in the model
     """
+    alpha = np.zeros(log_emlik.shape)
+    alpha[0][:] = log_startprob.T + log_emlik[0]
+
+    for n in range(1, len(alpha)):
+        for i in range(alpha.shape[1]):
+            alpha[n, i] = logsumexp(
+                alpha[n - 1] + log_transmat[:, i]) + log_emlik[n, i]
+    return alpha
 
 
 def backward(log_emlik, log_startprob, log_transmat):
@@ -153,6 +158,33 @@ def viterbi(log_emlik, log_startprob, log_transmat, forceFinalState=True):
         viterbi_loglik: log likelihood of the best path
         viterbi_path: best path
     """
+    N = log_emlik.shape[0]
+    M = log_emlik.shape[1]
+
+    viterbi_path = np.empty((N), dtype=np.int)
+    viterbi_loglik = 0
+    V = np.zeros((N, M))
+    B = np.zeros((N, M))
+
+    for j in range(M):
+        V[0, j] = log_startprob[j] + log_emlik[0, j]
+
+    for n in range(1, N):
+        for j in range(M):
+            V[n, j] = np.max(V[n-1, :] + log_transmat[:, j]) + log_emlik[n, j]
+            B[n, j] = np.argmax(V[n-1, :] + log_transmat[:, j])
+
+    viterbi_path[-1] = np.argmax(V[-1, :])
+    viterbi_loglik = V[N-1, viterbi_path[-1]]
+
+    for n in range(0, N-1):
+        viterbi_path[n] += np.max(V[n-1, :])
+
+    for n in reversed(range(N-1)):
+        for j in range(M):
+            viterbi_path[n] = B[n+1, viterbi_path[n+1]]
+
+    return (viterbi_loglik, viterbi_path)
 
 
 def statePosteriors(log_alpha, log_beta):
