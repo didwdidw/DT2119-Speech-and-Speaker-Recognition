@@ -1,5 +1,6 @@
 import numpy as np
-from tools2 import *
+from lab2_tools import *
+
 
 def concatTwoHMMs(hmm1, hmm2):
     """ Concatenates 2 HMM models
@@ -23,12 +24,43 @@ def concatTwoHMMs(hmm1, hmm2):
             covars: KxD array of variances
 
     K is the sum of the number of emitting states from the input models
-   
+
     Example:
        twoHMMs = concatHMMs(phoneHMMs['sil'], phoneHMMs['ow'])
 
     See also: the concatenating_hmms.pdf document in the lab package
     """
+    # Number of states in hmm1 (excluding the non-emitting state)
+    M1 = len(hmm1['startprob']) - 1
+    M2 = len(hmm2['startprob']) - 1
+
+    # Concatenate start probabilities
+    startprob = np.zeros(M1 + M2 + 1)
+    # Exclude the non-emitting state's probability
+    startprob[:M1] = hmm1['startprob'][:-1]
+    # Transition from hmm1's non-emitting state
+    startprob[M1:] = hmm1['startprob'][-1] * hmm2['startprob']
+
+    # Create the transition matrix
+    transmat = np.zeros((M1 + M2 + 1, M1 + M2 + 1))
+    # Internal transitions in hmm1
+    transmat[:M1, :M1] = hmm1['transmat'][:-1, :-1]
+    transmat[M1:, M1:] = hmm2['transmat']  # Internal transitions in hmm2
+    transmat[:M1, M1:] = np.outer(
+        hmm1['transmat'][:-1, -1], hmm2['startprob'])  # From hmm1 to hmm2
+
+    # Concatenate means and covariances
+    means = np.vstack((hmm1['means'], hmm2['means']))
+    covars = np.vstack((hmm1['covars'], hmm2['covars']))
+
+    return {
+        'name': hmm1['name'] + '+' + hmm2['name'],
+        'startprob': startprob,
+        'transmat': transmat,
+        'means': means,
+        'covars': covars
+    }
+
 
 # this is already implemented, but based on concat2HMMs() above
 def concatHMMs(hmmmodels, namelist):
@@ -62,7 +94,7 @@ def concatHMMs(hmmmodels, namelist):
        wordHMMs['o'] = concatHMMs(phoneHMMs, ['sil', 'ow', 'sil'])
     """
     concat = hmmmodels[namelist[0]]
-    for idx in range(1,len(namelist)):
+    for idx in range(1, len(namelist)):
         concat = concatTwoHMMs(concat, hmmmodels[namelist[idx]])
     return concat
 
@@ -80,6 +112,7 @@ def gmmloglik(log_emlik, weights):
         gmmloglik: scalar, log likelihood of data given the GMM model.
     """
 
+
 def forward(log_emlik, log_startprob, log_transmat):
     """Forward (alpha) probabilities in log domain.
 
@@ -92,6 +125,7 @@ def forward(log_emlik, log_startprob, log_transmat):
         forward_prob: NxM array of forward log probabilities for each of the M states in the model
     """
 
+
 def backward(log_emlik, log_startprob, log_transmat):
     """Backward (beta) probabilities in log domain.
 
@@ -103,6 +137,7 @@ def backward(log_emlik, log_startprob, log_transmat):
     Output:
         backward_prob: NxM array of backward log probabilities for each of the M states in the model
     """
+
 
 def viterbi(log_emlik, log_startprob, log_transmat, forceFinalState=True):
     """Viterbi path.
@@ -119,6 +154,7 @@ def viterbi(log_emlik, log_startprob, log_transmat, forceFinalState=True):
         viterbi_path: best path
     """
 
+
 def statePosteriors(log_alpha, log_beta):
     """State posterior (gamma) probabilities in log domain.
 
@@ -130,6 +166,7 @@ def statePosteriors(log_alpha, log_beta):
     Output:
         log_gamma: NxM array of gamma probabilities for each of the M states in the model
     """
+
 
 def updateMeanAndVar(X, log_gamma, varianceFloor=5.0):
     """ Update Gaussian parameters with diagonal covariance
