@@ -108,6 +108,10 @@ def gmmloglik(log_emlik, weights):
     Output:
         gmmloglik: scalar, log likelihood of data given the GMM model.
     """
+    gmmloglik = 0
+    for i in range(log_emlik.shape[0]):
+        gmmloglik += logsumexp(log_emlik[i]+np.log(weights))
+    return gmmloglik
 
 
 def forward(log_emlik, log_startprob, log_transmat):
