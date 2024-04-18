@@ -212,13 +212,35 @@ def statePosteriors(log_alpha, log_beta):
         log_gamma: NxM array of gamma probabilities for each of the M states in the model
     """
     log_gamma = np.zeros((log_alpha.shape[0], log_alpha.shape[1]))
-    
+
     for i in range(log_alpha.shape[0]):
-        log_gamma[i] = log_alpha[i, :] + log_beta[i, :] - logsumexp(log_alpha[-1])
+        log_gamma[i] = log_alpha[i, :] + \
+            log_beta[i, :] - logsumexp(log_alpha[-1])
 
     return log_gamma
-    
-    
+
+
+def compute_gmm_posteriors(obsloglik):
+    """Compute the GMM posteriors by treating HMM emission probabilities as a GMM,
+    with equal priors for each Gaussian component and ignoring transitions.
+
+    Args:
+        loglik: log likelihood of the observations sequence X given the HMM model, scalar
+
+    Output:
+        log_gmm_gamma: NxM array of gamma probabilities for each of the M states in the model
+    """
+    # Compute probabilities from log likelihoods
+    probs = np.exp(obsloglik - np.max(obsloglik, axis=1,
+                   keepdims=True))  # prevents numerical underflow by scaling the probabilities such that the highest probability in each row is scaled to 1
+
+    # Normalize to sum to 1 across states for each time step
+    sum_probs = np.sum(probs, axis=1, keepdims=True)
+    gmm_gamma = probs / sum_probs
+
+    log_gmm_gamma = np.log(gmm_gamma)  # convert back to log probabilities
+    return log_gmm_gamma
+
 
 def updateMeanAndVar(X, log_gamma, varianceFloor=5.0):
     """ Update Gaussian parameters with diagonal covariance
@@ -238,13 +260,11 @@ def updateMeanAndVar(X, log_gamma, varianceFloor=5.0):
     N = X.shape[0]
     D = X.shape[1]
     M = log_gamma.shape[1]
-    
+
     gamma = np.exp(log_gamma)
     means = np.zeros((M, D))
     covars = np.zeros((M, D))
 
-    
-    
     for i in range(M):
         gm = np.sum(gamma[:, i])
         means[i] = np.dot(gamma[:, i].T, X)/gm
@@ -253,12 +273,3 @@ def updateMeanAndVar(X, log_gamma, varianceFloor=5.0):
     covars = np.clip(covars, varianceFloor, None)
 
     return means, covars
-        
-
-
-
-
-
-    
-
-    
