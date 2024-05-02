@@ -1,0 +1,28 @@
+                   Studio Quality Speaker-Independent 
+                          Connected-Digit Corpus
+                                (TIDIGITS)
+
+                                CD-ROM Set
+
+                   NIST Speech Discs 4-1, 4-2, and 4-3
+                              February, 1991
+
+
+This set of discs contains a corpus of speech which was designed and collected
+at Texas Instruments (TI) for speaker-independent connected-digit automatic
+speech recognition development and evaluation.  The corpus has been reformatted
+and produced on CD-ROM by the National Institute of Standards and Technology
+(NIST) and is distributed with the permission of Texas Instruments.
+
+The following top-level directories and files exist on each disc:
+
+     readme.doc - This file.
+    
+     sphere/ - NIST SPeech HEader REsources (SPHERE).  C-language source
+               code libraries and utilities for manipulating NIST-headered
+               speech waveform files.  See "/sphere/readme.doc" for more
+               information.
+     
+     tidigits/ - Connected-digit speech corpora and documentation.  See
+                 "/tidigits/readme.doc" for more information.
+
