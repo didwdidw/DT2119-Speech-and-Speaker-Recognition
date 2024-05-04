@@ -1,6 +1,7 @@
 import numpy as np
 from lab3_tools import *
 
+
 def words2phones(wordList, pronDict, addSilence=True, addShortPause=True):
     """ word2phones: converts word level to phone level transcription adding silence
 
@@ -12,6 +13,22 @@ def words2phones(wordList, pronDict, addSilence=True, addShortPause=True):
     Output:
        list of phone symbols
     """
+    phone_list = []
+    if addSilence:
+        phone_list.append('sil')  # Add initial silence
+
+    for word in wordList:
+        if word in pronDict:
+            # Add phones from pronunciation dictionary
+            phone_list.extend(pronDict[word])
+            if addShortPause:
+                phone_list.append('sp')  # Add short pause after each word
+
+    if addSilence:
+        phone_list.append('sil')  # Add final silence
+
+    return phone_list
+
 
 def forcedAlignment(lmfcc, phoneHMMs, phoneTrans):
     """ forcedAlignmen: aligns a phonetic transcription at the state level
@@ -27,4 +44,3 @@ def forcedAlignment(lmfcc, phoneHMMs, phoneTrans):
        list of strings in the form phoneme_index specifying, for each time step
        the state from phoneHMMs corresponding to the viterbi path.
     """
-
