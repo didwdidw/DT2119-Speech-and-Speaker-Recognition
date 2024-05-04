@@ -44,3 +44,51 @@ def forcedAlignment(lmfcc, phoneHMMs, phoneTrans):
        list of strings in the form phoneme_index specifying, for each time step
        the state from phoneHMMs corresponding to the viterbi path.
     """
+    from sklearn.mixture import GaussianMixture
+    import numpy as np
+
+    # Concatenate all HMMs for the phones in the transcription
+    state_list = []
+    start_prob = []
+    trans_mat = []
+    means = []
+    covars = []
+
+    for phone in phoneTrans:
+        model = phoneHMMs[phone]
+        n_states = len(model['startprob'])
+        start_prob.extend(model['startprob'])
+        means.extend(model['means'])
+        covars.extend(model['covars'])
+
+        # Expand transition matrix
+        expanded_trans_mat = np.zeros(
+            (len(trans_mat) + n_states, len(trans_mat) + n_states))
+        expanded_trans_mat[:len(trans_mat), :len(trans_mat)] = trans_mat
+        expanded_trans_mat[len(trans_mat):, len(
+            trans_mat):] = model['transmat']
+        trans_mat = expanded_trans_mat
+
+        # Define state list
+        state_list.extend([f"{phone}_{i}" for i in range(n_states)])
+
+    # Convert lists to numpy arrays for log probabilities
+    log_startprob = np.log(np.array(start_prob))
+    log_transmat = np.log(np.array(trans_mat))
+
+    # Compute log likelihood for each state using Gaussian mixture model
+    gmm = GaussianMixture(n_components=len(means), covariance_type='diag',
+                          means_init=means, precisions_init=np.linalg.inv(covars))
+    gmm.means_ = np.array(means)
+    gmm.covariances_ = np.array(covars)
+    gmm.weights_ = np.ones(len(means)) / len(means)
+    log_emlik = gmm.score_samples(lmfcc)
+
+    # Align using Viterbi
+    import sys
+    sys.path.append('/Users/tim/Desktop/Speech/lab2')
+    from lab2_proto import viterbi
+    viterbi_path = viterbi(log_emlik, log_startprob, log_transmat)
+    aligned_phones = [state_list[state] for state in viterbi_path]
+
+    return aligned_phones
