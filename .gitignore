@@ -1,3 +1,12 @@
 traindata.npz
 testdata.npz
 dynamic_features.npz
+train-clean-100.tar.gz
+test-clean.tar.gz
+dev-clean.tar.gz
+wiki-interpolate.3gram.arpa
+lab4_example.pt
+__pycache__/
+LibriSpeech/
+*.pyc
+*.pyo
