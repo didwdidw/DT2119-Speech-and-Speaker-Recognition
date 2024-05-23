@@ -18,6 +18,7 @@ hparams = {
     "n_cnn_layers": 3,
     "n_rnn_layers": 5,
     "rnn_dim": 512,
+    # The number 29 equals the size of the character set (28), plus the blank token used by the CTC algorithm
     "n_class": 29,
     "n_feats": 80,
     "stride": 2,
@@ -108,15 +109,22 @@ class SpeechRecognitionModel(nn.Module):
         super(SpeechRecognitionModel, self).__init__()
         n_feats = n_feats//stride
         # cnn for extracting heirachal features
+        # The convolutions operate on the MelSpectrograms just as they would on images;
+        # by extracting feature maps that for each layer becomes more specialized to the task.
         self.cnn = nn.Conv2d(1, 32, 3, stride=stride, padding=3//2)
 
         # n residual cnn layers with filter size of 32
+        # There are skip-connections allowing a path for the data to pass directly to the next layer
         self.rescnn_layers = nn.Sequential(*[
             ResidualCNN(32, 32, kernel=3, stride=1,
                         dropout=dropout, n_feats=n_feats)
             for _ in range(n_cnn_layers)
         ])
         self.fully_connected = nn.Linear(n_feats*32, rnn_dim)
+        # Since they are bidirectional,
+        # they can model time dependencies both forwards and backwards in time,
+        # which is beneficial to the task of speech recognition,
+        # but the forward time dependency limits the model to only work in non-casual scenarios when the entire input is known up front
         self.birnn_layers = nn.Sequential(*[
             BidirectionalGRU(rnn_dim=rnn_dim if i == 0 else rnn_dim*2,
                              hidden_size=rnn_dim, dropout=dropout, batch_first=i == 0)
@@ -233,7 +241,7 @@ def test(model, device, test_loader, criterion, epoch):
             decoded_targets = []
             for i in range(len(labels)):
                 decoded_targets.append(
-                    intToText(labels[i][:label_lengths[i]].tolist()))
+                    intToStr(labels[i][:label_lengths[i]].tolist()))
 
             # get predicted text
             decoded_preds = greedyDecoder(output)
@@ -252,7 +260,11 @@ def test(model, device, test_loader, criterion, epoch):
 labels = ["'", ' ', 'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't',
           'u', 'v', 'w', 'x', 'y', 'z']
 
-# Instantiate the decoder
+# Since the model works on character level, it often produces strange spellings and funny words.
+# This is where a language model can help a lot.
+# The language model is integrated at the decoding stage. This is known as shallow fusion.
+
+# Instantiate the decoder:
 decoder = build_ctcdecoder(
     labels,
     kenlm_model_path='wiki-interpolate.3gram.arpa',
@@ -375,7 +387,8 @@ if __name__ == '__main__':
     print(args.mode)
 
     if args.model != '':
-        model.load_state_dict(torch.load(args.model))
+        model.load_state_dict(torch.load(
+            args.model, map_location=torch.device('cpu')))
 
     if args.mode == 'train':
         for epoch in range(hparams['epochs']):

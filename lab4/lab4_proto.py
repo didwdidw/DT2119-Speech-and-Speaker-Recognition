@@ -141,6 +141,8 @@ def greedyDecoder(output, blank_label=28):
     returns:
         list of decoded strings
     '''
+    # Each time step gets assigned the character with the highest probability at that step
+
     decoded_strings = []
     for batch in output:
         # Extract the most likely labels for each time step.
