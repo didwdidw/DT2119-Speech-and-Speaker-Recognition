@@ -1,2 +1,0 @@
-b_eval.txt
-g_eval.txt

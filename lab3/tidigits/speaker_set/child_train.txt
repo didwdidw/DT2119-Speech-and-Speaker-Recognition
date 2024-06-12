@@ -1,2 +1,0 @@
-b_train.txt
-g_train.txt
